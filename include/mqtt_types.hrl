@@ -17,3 +17,9 @@
 -type mqtt_utf8() :: <<_:16,_:_*8>>.
 -type mqtt_binary() :: <<_:16,_:_*8>>.
 
+-type mqtt_pac_type() :: connect | connack | publish | puback | pubrec | pubrel | pubcomp | subscribe | suback | unsubscribe | unsuback | pingreq | pingresp | disconnect | auth.
+-type mqtt_pac_flags() :: <<_:4>>.
+-type mqtt_pac_err() :: incomplete | malformed.
+
+
+

@@ -25,13 +25,15 @@
         String  :: mqtt_utf8(),
         Result :: boolean().
 is_mqtt_utf8 (<<L:16,Str/binary>>) ->
-    case unicode:characters_to_binary(Str,unicode,unicode) of
+    case unicode:characters_to_list(Str,unicode) of
         {error,_,_} -> false;
         {incomplete,_,_} -> false;
-        _ ->
-            if
-                byte_size(Str) =:= L -> true;
-                true -> false
+        Chars ->
+            case io_lib:printable_unicode_list(Chars) of
+                true ->
+                    byte_size(Str) =:= L;
+                false ->
+                    false
             end
     end;
 is_mqtt_utf8 (_) ->
