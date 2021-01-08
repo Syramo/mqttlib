@@ -182,31 +182,31 @@ spair_bin (Data) ->
         RestLen :: integer(),
         Rest :: binary(),
         Reason :: mqtt_pac_err().
-sfixedhead (<<1:4,F:4,R/binary>>) when F == 0 ->  fixedhead(connect,F,R);
-sfixedhead (<<2:4,F:4,R/binary>>) when F == 0 ->  fixedhead(connack,F,R);
-sfixedhead (<<3:4,F:4,R/binary>>) ->  fixedhead(publish,F,R);
-sfixedhead (<<4:4,F:4,R/binary>>) when F == 0 ->  fixedhead(puback,F,R);
-sfixedhead (<<5:4,F:4,R/binary>>) when F == 0 ->  fixedhead(pubrec,F,R);
-sfixedhead (<<6:4,F:4,R/binary>>) when F == 2 ->  fixedhead(pubrel,F,R);
-sfixedhead (<<7:4,F:4,R/binary>>) when F == 0 ->  fixedhead(pubcomp,F,R);
-sfixedhead (<<8:4,F:4,R/binary>>) when F == 2 ->  fixedhead(subscribe,F,R);
-sfixedhead (<<9:4,F:4,R/binary>>) when F == 0 ->  fixedhead(suback,F,R);
-sfixedhead (<<10:4,F:4,R/binary>>) when F == 2 ->  fixedhead(unsubscribe,F,R);
-sfixedhead (<<11:4,F:4,R/binary>>) when F == 0 ->  fixedhead(unsuback,F,R);
-sfixedhead (<<12:4,F:4,R/binary>>) when F == 0 ->  fixedhead(pingreq,F,R);
-sfixedhead (<<13:4,F:4,R/binary>>) when F == 0 ->  fixedhead(pingresp,F,R);
-sfixedhead (<<14:4,F:4,R/binary>>) when F == 0 ->  fixedhead(disconnect,F,R);
-sfixedhead (<<15:4,F:4,R/binary>>) when F == 0 ->  fixedhead(auth,F,R);
+sfixedhead (<<1:4,F:4,R/binary>>) when F == 0 ->  fixedhead(connect,<<F:4>>,R);
+sfixedhead (<<2:4,F:4,R/binary>>) when F == 0 ->  fixedhead(connack,<<F:4>>,R);
+sfixedhead (<<3:4,F:4,R/binary>>) ->  fixedhead(publish,<<F:4>>,R);
+sfixedhead (<<4:4,F:4,R/binary>>) when F == 0 ->  fixedhead(puback,<<F:4>>,R);
+sfixedhead (<<5:4,F:4,R/binary>>) when F == 0 ->  fixedhead(pubrec,<<F:4>>,R);
+sfixedhead (<<6:4,F:4,R/binary>>) when F == 2 ->  fixedhead(pubrel,<<F:4>>,R);
+sfixedhead (<<7:4,F:4,R/binary>>) when F == 0 ->  fixedhead(pubcomp,<<F:4>>,R);
+sfixedhead (<<8:4,F:4,R/binary>>) when F == 2 ->  fixedhead(subscribe,<<F:4>>,R);
+sfixedhead (<<9:4,F:4,R/binary>>) when F == 0 ->  fixedhead(suback,<<F:4>>,R);
+sfixedhead (<<10:4,F:4,R/binary>>) when F == 2 ->  fixedhead(unsubscribe,<<F:4>>,R);
+sfixedhead (<<11:4,F:4,R/binary>>) when F == 0 ->  fixedhead(unsuback,<<F:4>>,R);
+sfixedhead (<<12:4,F:4,R/binary>>) when F == 0 ->  fixedhead(pingreq,<<F:4>>,R);
+sfixedhead (<<13:4,F:4,R/binary>>) when F == 0 ->  fixedhead(pingresp,<<F:4>>,R);
+sfixedhead (<<14:4,F:4,R/binary>>) when F == 0 ->  fixedhead(disconnect,<<F:4>>,R);
+sfixedhead (<<15:4,F:4,R/binary>>) when F == 0 ->  fixedhead(auth,<<F:4>>,R);
 sfixedhead (<<0:4,_:4,_/binary>>) ->  {error, malformed}.
 
 -spec fixedhead(Type, Flags, Data) -> {ok, Type, Flags, RestLen, Data} | {error, Reason} when
         Type :: mqtt_pac_type(),
         Flags :: mqtt_pac_flags(),
-        RestLen :: integer(),
+        RestLen :: non_neg_integer(),
         Data :: binary(),
         Reason :: mqtt_pac_err().
-fixedhead (Type, Flags, Data) ->
+fixedhead (Type, <<Flags:4>>, Data) ->
     case svarint(Data) of
-        {ok, Len, Rest} -> {ok, Type, Flags, Len, Rest};
+        {ok, Len, Rest} -> {ok, Type, <<Flags:4>>, Len, Rest};
         {error, Reason} -> {error, Reason}
     end.

@@ -153,6 +153,6 @@ binary_to_mqtt_binary (Data) ->
 -spec mqtt_binary_to_binary (MqttBinary) -> Binary when
         MqttBinary :: mqtt_binary(),
         Binary :: binary().
-mqtt_binary_to_binary (<<_:16,D>>) ->
+mqtt_binary_to_binary (<<_:16,D/binary>>) ->
     D.
 
