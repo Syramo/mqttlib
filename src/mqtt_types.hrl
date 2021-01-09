@@ -9,6 +9,7 @@
 -author ("helge").
 
 -define (MAX_VARINT_BYTES,4).
+-define (THROWS,no_return()).
 
 -type mqtt_int2() :: <<_:16>>.
 -type mqtt_int4() :: <<_:32>>.
@@ -19,7 +20,7 @@
 
 -type mqtt_pac_type() :: connect | connack | publish | puback | pubrec | pubrel | pubcomp | subscribe | suback | unsubscribe | unsuback | pingreq | pingresp | disconnect | auth.
 -type mqtt_pac_flags() :: <<_:4>>.
--type mqtt_pac_err() :: incomplete | malformed.
+-type mqtt_pac_err() :: incomplete | malformed | unsupprot.
 
 
 -type mqtt_properties() :: [{Key :: mqtt_varint(), Val :: byte() | mqtt_int4() | mqtt_utf8() | mqtt_binary() | mqtt_varint() | mqtt_int2()}].
@@ -53,26 +54,28 @@
 -define (MQTTPR_MPS,16#27).         % Maximum Packet Size (Int4)                -> CONNECT, CONNACK
 -define (MQTTPR_WSA,16#28).         % Wildcard Subscription Available (Byte)    -> CONNACK
 -define (MQTTPR_SIA,16#29).         % Subscription Identifier Available (Byte)  -> CONNACK
--define (MQTTPR_SIA,16#2A).         % Shared Subscription Available (Byte)      -> CONNACK
+-define (MQTTPR_SSA,16#2A).         % Shared Subscription Available (Byte)      -> CONNACK
 
 
 %%=============================================================================
 %% control packet types
 
 -record (connect,{
-    protocol = <<4:16,"MQTT">> :: mqtt_utf8(),
-    version = <<5:8>> :: byte(),
+    protocol = <<"MQTT">> :: binary(),
+    version = 5 :: integer(),
     clean_start = true :: boolean(),
-    keep_alive = <<0:16>> :: mqtt_int2(),
-    properties = [] :: mqtt_properties(),
-    clinet_id = none :: none | mqtt_utf8(),
-    will_properties = none :: none | mqtt_properties(),
-    will_topic = none :: none | mqtt_utf8(),
-    will_payload = none :: none | mqtt_binary(),
-    will_qos = <<0:2>> :: <<_:2>>,
+    keep_alive = 0 :: integer(),
+                                                                                        %% add all possible properties
+    user_props = #{} :: #{binary()=>binary()},
+    clinet_id = none :: none | binary(),
+                                                                                        %% add all possible will properties
+    will_user_props = #{} :: #{binary()=>binary()},           
+    will_topic = none :: none | binary(),
+    will_payload = none :: none | binary(),
+    will_qos = 2 :: integer(),
     will_retain = false :: boolean(),
-    username = none :: none | mqtt_utf8(),
-    password = none :: none | mqtt_binary()
+    username = none :: none | binary(),
+    password = none :: none | binary()
 }).
 
 -record (connack,{
@@ -151,3 +154,20 @@
     flags = <<0:4>> :: mqtt_pac_flags(),
     properties = [] :: mqtt_properties()
 }).
+
+
+-type mqtt_ctrl_pac() :: #connect{} | 
+                        #connack{} | 
+                        #publish{} | 
+                        #puback{} | 
+                        #pubrec{} | 
+                        #pubrel{} | 
+                        #pubcomp{} | 
+                        #subscribe{} | 
+                        #suback{} | 
+                        #unsubscribe{} | 
+                        #unsuback{} | 
+                        #pingreq{} | 
+                        #pingresp{} | 
+                        #disconnect{} | 
+                        #auth{}.

@@ -66,7 +66,8 @@ is_mqtt_int4 (<<_A:32>>) ->
 is_mqtt_int4 (_) ->
     false.
 
--spec is_mqtt_varint (Binary) -> Result when
+-spec is_mqtt_varint (Binary) -> Result 
+    when
         Binary :: mqtt_varint(),
         Result :: boolean().
 is_mqtt_varint (<<0:1,_:7>>) ->

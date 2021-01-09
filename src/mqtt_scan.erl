@@ -15,66 +15,66 @@
 
 %%---------------------------------------scan single bytes from stream---------
 
--spec sbyte (Data) -> {ok, Byte, Rest} | {error, Reason} when
+-spec sbyte (Data) -> {Byte, Rest} | ?THROWS
+    when
         Data :: binary(),
         Byte :: <<_:8>>,
-        Rest :: binary(),
-        Reason :: mqtt_pac_err().
+        Rest :: binary().
 sbyte (<<B:8,R/binary>>) ->
-    {ok, B, R};
+    {B, R};
 sbyte (<<>>) ->
-    {error, incomplete};
+    throw(incomplete);
 sbyte (_) ->
-    {error, malformed}.
+    throw(malformed).
 
 
 %%---------------------------------------scan a 2byte integer------------------
 
--spec sint2 (Data) -> {ok, Int, Rest} | {error, Reason} when
+-spec sint2 (Data) -> {Int, Rest} | ?THROWS
+    when
         Data :: binary(),
         Int :: integer(),
-        Rest :: binary(),
-        Reason :: mqtt_pac_err().
+        Rest :: binary().
 sint2 (<<A:16/big,R/binary>>) ->
-    {ok, A, R};
+    {A, R};
 sint2 (X) when is_binary(X) ->
-    {error, incomplete};
+    throw(incomplete);
 sint2 (_) ->
-    {errorm, malformed}.
+    throw(malformed).
 
 
 %%---------------------------------------scan a 4 byte integer-----------------
 
--spec sint4 (Data) -> {ok, Int, Rest} | {error, Reason} when
+-spec sint4 (Data) -> {Int, Rest} | ?THROWS
+    when
         Data :: binary(),
         Int :: integer(),
-        Rest :: binary(),
-        Reason :: mqtt_pac_err().
+        Rest :: binary().
 sint4 (<<A:32/big,R/binary>>) ->
-    {ok, A, R};
+    {A, R};
 sint4 (X) when is_binary(X) ->
-    {error, incomplete};
+     throw(incomplete);
 sint4 (_) ->
-    {errorm, malformed}.
+    throw(malformed).
 
 
 %%---------------------------------------scan a up to 4 byte varint------------
 
--spec svarint (Data) -> {ok, Int, Rest} | {error, Reason} when
+-spec svarint (Data) -> {Int, Rest} | ?THROWS
+    when
         Data :: binary(),
         Int :: integer(),
-        Rest :: binary(),
-        Reason :: mqtt_pac_err().
+        Rest :: binary().
 svarint (<<>>) ->
-    {error, incomplete};
+     throw(incomplete);
 svarint (Data) when is_binary(Data) ->
     {B,R} = colbytes (Data,<<>>),
     case mqtt_types:is_mqtt_varint(B) of
-        true -> {ok, mqtt_types:mqtt_varint_to_int(B),R};
-        false -> {error, malformed}
+        true -> {mqtt_types:mqtt_varint_to_int(B),R};
+        false -> throw(malformed)
     end;
 svarint (_) ->
-    {error, malformed}.
+    throw(malformed).
 
 -spec colbytes (Data, Acc) -> {VBytes, Rest} when
         Data :: binary(),
@@ -91,97 +91,79 @@ colbytes (<<1:1,A:7,R/binary>>,Acc) ->
 
 %%---------------------------------------scan utf8 strings-----------------------
 
--spec sutf8_str (Data) -> {ok, String, Rest} | {error, Reason} when
+-spec sutf8_str (Data) -> {String, Rest} | ?THROWS
+    when
         Data :: binary(),
         String :: string(),
-        Rest :: binary(),
-        Reason :: mqtt_pac_err().
+        Rest :: binary().
 sutf8_str (Data) ->
-    case sutf8_bin (Data) of
-        {ok, Str, Rest} -> {ok, binary_to_list(Str), Rest};
-        {error, Reason} -> {error, Reason}
-    end.
-
--spec sutf8_bin (Data) -> {ok, String, Rest} | {error, Reason} when
+    {Str, Rest} = sutf8_bin(Data),
+    {binary_to_list(Str), Rest}.
+    
+-spec sutf8_bin (Data) -> {String, Rest} | ?THROWS
+    when
         Data :: binary(),
         String :: binary(),
-        Rest :: binary(),
-        Reason :: mqtt_pac_err().
+        Rest :: binary().
 sutf8_bin (Data) ->
-    case sbin(Data) of
-        {ok, Bin, Rest} ->
-            L = byte_size(Bin),
-            case mqtt_types:is_mqtt_utf8(<<L:16,Bin/binary>>) of
-                true -> {ok, Bin, Rest};
-                false -> {error, malformed}
-            end;
-        {error, Reason} ->
-            {error, Reason}
+    {Bin, Rest} = sbin(Data),
+    L = byte_size(Bin),
+    case mqtt_types:is_mqtt_utf8(<<L:16,Bin/binary>>) of
+        true -> {Bin, Rest};
+        false -> throw(malformed)
     end.
 
 
 %----------------------------------------scan binaries-------------------------
 
--spec sbin (Data) -> {ok, Bin, Rest} | {error, Reason} when
+-spec sbin (Data) -> {Bin, Rest} | ?THROWS
+    when
         Data :: binary(),
         Bin :: binary(),
-        Rest :: binary(),
-        Reason :: mqtt_pac_err().
+        Rest :: binary().
 sbin (<<Len:16,RBin/binary>>) when byte_size(RBin) >= Len ->
     Bin = binary:part(RBin,{0,Len}),
     Rest = binary:part(RBin,{Len,byte_size(RBin)-Len}),
-    {ok, Bin, Rest};
+    {Bin, Rest};
 sbin (<<Len:16,RBin/binary>>) when byte_size(RBin) < Len ->
-    {error, incomplete};
+    throw(incomplete);
 sbin (_) ->
-    {error, malformed}.
+    throw(malformed).
 
 
 %----------------------------------------scan string pairs---------------------
 
--spec spair_str (Data) -> {ok, {Key, Val}, Rest} | {error, Reason} when
+-spec spair_str (Data) -> {{Key, Val}, Rest} | ?THROWS
+    when
         Data :: binary(),
         Key :: string(),
         Val :: string(),
-        Rest :: binary(),
-        Reason :: mqtt_pac_err().
+        Rest :: binary().
 spair_str (Data) ->
-    case spair_bin(Data) of
-        {ok, {Key, Val}, Rest} ->
-            {ok, binary_to_list(Key), binary_to_list(Val), Rest};
-        {error, Reason} ->
-            {error, Reason}
-    end.
+    {{Key, Val}, Rest} = spair_bin(Data),
+    {{binary_to_list(Key), binary_to_list(Val)}, Rest}.
 
--spec spair_bin (Data) -> {ok, {Key, Val}, Rest} | {error, Reason} when
+-spec spair_bin (Data) -> {{Key, Val}, Rest} | ?THROWS
+    when
         Data :: binary(),
         Key :: binary(),
         Val :: binary(),
-        Rest :: binary(),
-        Reason :: mqtt_pac_err().
+        Rest :: binary().
 spair_bin (Data) ->
-    case sbin(Data) of
-        {ok, Key, Rest} ->
-            case sbin(Rest) of
-                {ok, Val, Rem} -> 
-                    {ok, {Key, Val}, Rem};
-                {error, Reason} ->
-                    {error, Reason}
-            end;
-        {error, Reason} ->
-            {error, Reason}
-    end.
+    {Key, Rest} = sbin(Data),
+    {Val, Rem} = sbin(Rest),
+    {{Key, Val}, Rem}.
 
 
 %------------------------------------scan fixed header-------------------------
 
--spec sfixedhead (Data) -> {ok, Type, Flags, RestLen, Rest} | {error, Reason} when
+-spec sfixedhead (Data) -> {Type, Flags, RestLen, Rest} | ?THROWS
+    when
         Data :: binary(),
         Type :: mqtt_pac_type(),
         Flags :: mqtt_pac_flags(),
         RestLen :: integer(),
-        Rest :: binary(),
-        Reason :: mqtt_pac_err().
+        Rest :: binary().
 sfixedhead (<<1:4,F:4,R/binary>>) when F == 0 ->  fixedhead(connect,<<F:4>>,R);
 sfixedhead (<<2:4,F:4,R/binary>>) when F == 0 ->  fixedhead(connack,<<F:4>>,R);
 sfixedhead (<<3:4,F:4,R/binary>>) ->  fixedhead(publish,<<F:4>>,R);
@@ -197,16 +179,14 @@ sfixedhead (<<12:4,F:4,R/binary>>) when F == 0 ->  fixedhead(pingreq,<<F:4>>,R);
 sfixedhead (<<13:4,F:4,R/binary>>) when F == 0 ->  fixedhead(pingresp,<<F:4>>,R);
 sfixedhead (<<14:4,F:4,R/binary>>) when F == 0 ->  fixedhead(disconnect,<<F:4>>,R);
 sfixedhead (<<15:4,F:4,R/binary>>) when F == 0 ->  fixedhead(auth,<<F:4>>,R);
-sfixedhead (<<0:4,_:4,_/binary>>) ->  {error, malformed}.
+sfixedhead (<<0:4,_:4,_/binary>>) ->  throw(malformed).
 
--spec fixedhead(Type, Flags, Data) -> {ok, Type, Flags, RestLen, Data} | {error, Reason} when
+-spec fixedhead(Type, Flags, Data) -> {Type, Flags, RestLen, Data} | ?THROWS 
+    when
         Type :: mqtt_pac_type(),
         Flags :: mqtt_pac_flags(),
         RestLen :: non_neg_integer(),
-        Data :: binary(),
-        Reason :: mqtt_pac_err().
+        Data :: binary().
 fixedhead (Type, <<Flags:4>>, Data) ->
-    case svarint(Data) of
-        {ok, Len, Rest} -> {ok, Type, <<Flags:4>>, Len, Rest};
-        {error, Reason} -> {error, Reason}
-    end.
+    {Len, Rest} = svarint(Data),
+    {Type, <<Flags:4>>, Len, Rest}.
