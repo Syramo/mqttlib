@@ -31,7 +31,8 @@ decode (Data) ->
                 {error, incomplete}
         end
     catch
-        throw:Reason -> {error, Reason}
+        throw:Reason -> {error, Reason};
+        error:{{badmatch,_},_} -> {error, malformed}
     end.
 
 
@@ -46,11 +47,14 @@ decode (Data) ->
 build_ctrl_packet (connect, <<0:4>>, Data) ->
     {Prot, R1} = mqtt_scan:sutf8_bin(Data),
     {Ver, R2} = mqtt_scan:sbyte(R1),
+    {<<_:7,0:1>>=CFlags, R3} = mqtt_scan:sbyte(R2),
     CP = #connect{
         protocol = Prot,
-        version = Ver
+        version = Ver,
+        conn_flags = CFlags
     },
-    validate_ctrl_packet(CP).
+    {ok, ValidCP} = validate_ctrl_packet(CP),
+    ValidCP.
 
 
 %----------------------------------------validating control packets------------
@@ -60,9 +64,8 @@ build_ctrl_packet (connect, <<0:4>>, Data) ->
         ControlPacket :: mqtt_ctrl_pac().
 validate_ctrl_packet (#connect{}=CP) ->
     <<"MQTT">> =:= CP#connect.protocol orelse throw(unsupprot),
-    5 =:= CP#connect.version orelse throw(unsupprot),
-    CP.
+    <<5:8>> =:= CP#connect.version orelse throw(unsupprot),
+    {ok, CP};
+validate_ctrl_packet (_) ->
+    throw(malformed).
 
-
-
-   

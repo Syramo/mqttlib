@@ -21,7 +21,7 @@
         Byte :: <<_:8>>,
         Rest :: binary().
 sbyte (<<B:8,R/binary>>) ->
-    {B, R};
+    {<<B:8>>, R};
 sbyte (<<>>) ->
     throw(incomplete);
 sbyte (_) ->

@@ -20,7 +20,7 @@
 
 -type mqtt_pac_type() :: connect | connack | publish | puback | pubrec | pubrel | pubcomp | subscribe | suback | unsubscribe | unsuback | pingreq | pingresp | disconnect | auth.
 -type mqtt_pac_flags() :: <<_:4>>.
--type mqtt_pac_err() :: incomplete | malformed | unsupprot.
+-type mqtt_pac_err() :: incomplete | malformed | unsupprot | unsuppac.
 
 
 -type mqtt_properties() :: [{Key :: mqtt_varint(), Val :: byte() | mqtt_int4() | mqtt_utf8() | mqtt_binary() | mqtt_varint() | mqtt_int2()}].
@@ -63,19 +63,8 @@
 -record (connect,{
     protocol = <<"MQTT">> :: binary(),
     version = 5 :: integer(),
-    clean_start = true :: boolean(),
-    keep_alive = 0 :: integer(),
-                                                                                        %% add all possible properties
-    user_props = #{} :: #{binary()=>binary()},
-    clinet_id = none :: none | binary(),
-                                                                                        %% add all possible will properties
-    will_user_props = #{} :: #{binary()=>binary()},           
-    will_topic = none :: none | binary(),
-    will_payload = none :: none | binary(),
-    will_qos = 2 :: integer(),
-    will_retain = false :: boolean(),
-    username = none :: none | binary(),
-    password = none :: none | binary()
+    conn_flags = <<0:8>> :: <<_:8>>
+
 }).
 
 -record (connack,{
@@ -156,18 +145,18 @@
 }).
 
 
--type mqtt_ctrl_pac() :: #connect{} | 
-                        #connack{} | 
-                        #publish{} | 
-                        #puback{} | 
-                        #pubrec{} | 
-                        #pubrel{} | 
-                        #pubcomp{} | 
-                        #subscribe{} | 
-                        #suback{} | 
-                        #unsubscribe{} | 
-                        #unsuback{} | 
-                        #pingreq{} | 
-                        #pingresp{} | 
-                        #disconnect{} | 
-                        #auth{}.
+-type mqtt_ctrl_pac() ::    #connect{} | 
+                            #connack{} | 
+                            #publish{} | 
+                            #puback{} | 
+                            #pubrec{} | 
+                            #pubrel{} | 
+                            #pubcomp{} | 
+                            #subscribe{} | 
+                            #suback{} | 
+                            #unsubscribe{} | 
+                            #unsuback{} | 
+                            #pingreq{} | 
+                            #pingresp{} | 
+                            #disconnect{} | 
+                            #auth{}.
